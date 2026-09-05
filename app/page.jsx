@@ -5,6 +5,7 @@ import MeditationView from '@/components/MeditationView';
 import WorkoutView from '@/components/WorkoutView';
 import { GhostButton, Slider, SoundIcon, Toggle } from '@/components/ui';
 import { getEngine } from '@/lib/audio';
+import { GONGS } from '@/lib/gongs';
 import { useLocalState } from '@/lib/useLocalState';
 
 const TABS = [
@@ -35,6 +36,7 @@ export default function Home() {
   const [minutes, setMinutes] = useLocalState('medMinutes', 10);
   const [ambienceId, setAmbienceId] = useLocalState('ambience', 'forest');
   const [bellEvery, setBellEvery] = useLocalState('bell', 0);
+  const [gongId, setGongId] = useLocalState('gong', 'gong-1');
   const [settingsOpen, setSettingsOpen] = useState(false);
 
   // Mirror the preferences into the audio engine.
@@ -50,6 +52,10 @@ export default function Home() {
     const engine = getEngine();
     if (engine) engine.setAmbienceVolume(ambienceVolume);
   }, [ambienceVolume]);
+  useEffect(() => {
+    const engine = getEngine();
+    if (engine) engine.setGong(gongId);
+  }, [gongId]);
 
   useEffect(() => {
     const onKey = (e) => {
@@ -115,7 +121,34 @@ export default function Home() {
             onChange={(v) => setCueVolume(v / 100)}
             display={`${Math.round(cueVolume * 100)} %`}
           />
-          <div className="flex flex-wrap gap-2 px-1 pb-1 pt-2">
+          <div className="px-1 pb-1 pt-3">
+            <p className="text-sm font-medium">Gong</p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {GONGS.map((g) => (
+                <button
+                  key={g.id}
+                  type="button"
+                  onClick={() => {
+                    setGongId(g.id);
+                    const engine = getEngine();
+                    if (engine) {
+                      engine.setGong(g.id);
+                      engine.preview('work').catch(() => {});
+                    }
+                  }}
+                  aria-pressed={g.id === gongId}
+                  title={g.hint}
+                  className={`rounded-full px-3.5 py-1.5 text-sm transition ${
+                    g.id === gongId ? 'accent-fill text-ink font-semibold' : 'bg-white/6 text-chalk/75 hover:bg-white/12'
+                  }`}
+                >
+                  {g.name}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex flex-wrap gap-2 px-1 pb-1 pt-3">
             {[
               ['work', 'Gong effort'],
               ['rest', 'Cliquetis repos'],
@@ -125,7 +158,7 @@ export default function Home() {
               <button
                 key={type}
                 type="button"
-                onClick={() => getEngine()?.preview(type)}
+                onClick={() => getEngine()?.preview(type).catch(() => {})}
                 className="rounded-full bg-white/6 px-3 py-1.5 text-xs text-chalk/75 transition hover:bg-white/12"
               >
                 ▸ {label}
@@ -169,7 +202,7 @@ export default function Home() {
       </div>
 
       <footer className="mt-14 text-center text-[0.7rem] leading-relaxed text-mist/70">
-        <p>Espace : démarrer / pause · R : réinitialiser · M : couper le son</p>
+        <p>Espace : démarrer / pause · R : réinitialiser · M : couper le son · F : mode focus</p>
         <p className="mt-1">
           Ambiances naturelles CC0 —{' '}
           <a

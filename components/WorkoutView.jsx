@@ -2,9 +2,10 @@
 
 import { useCallback, useEffect, useMemo } from 'react';
 import Dial from './Dial';
-import { GhostButton, ProgressBar, ResetIcon, SegmentStrip, TransportButton } from './ui';
+import FocusOverlay from './FocusOverlay';
+import { ExpandIcon, GhostButton, ProgressBar, ResetIcon, SegmentStrip, TransportButton } from './ui';
 import { PRESETS, buildSchedule, formatTime, presetRounds, presetSubtitle, segmentAt } from '@/lib/presets';
-import { useHotkeys, useRunner, useWakeLock } from '@/lib/useRunner';
+import { useFocusMode, useHotkeys, useRunner, useWakeLock } from '@/lib/useRunner';
 
 const ACCENTS = {
   work: ['#ff9a3c', '#ff3d6e'],
@@ -20,7 +21,8 @@ export default function WorkoutView({ presetId, onPresetChange, countdown }) {
 
   const running = status === 'running';
   const done = status === 'done';
-  useWakeLock(running);
+  const { focus, enter: enterFocus, exit: exitFocus } = useFocusMode();
+  useWakeLock(running || focus);
 
   const current = segmentAt(schedule.segments, elapsed);
   const phase = done ? 'idle' : status === 'idle' ? 'idle' : current.kind;
@@ -53,10 +55,21 @@ export default function WorkoutView({ presetId, onPresetChange, countdown }) {
 
   useHotkeys({ onToggle: onTransport, onReset: reset });
 
+  const segmentProgress = status === 'idle' ? 0 : intoSegment / current.duration;
+
   return (
     <div className="flex flex-col items-center gap-8">
+      <FocusOverlay
+        open={focus}
+        progress={segmentProgress}
+        sessionProgress={elapsed / schedule.total}
+        running={running}
+        onToggle={onTransport}
+        onExit={exitFocus}
+      />
+
       <Dial
-        progress={status === 'idle' ? 0 : intoSegment / current.duration}
+        progress={segmentProgress}
         sessionProgress={elapsed / schedule.total}
         time={heroTime}
         label={heroLabel}
@@ -82,7 +95,9 @@ export default function WorkoutView({ presetId, onPresetChange, countdown }) {
           <ResetIcon />
         </GhostButton>
         <TransportButton running={running} onClick={onTransport} />
-        <div className="h-12 w-12" aria-hidden />
+        <GhostButton onClick={enterFocus} ariaLabel="Mode focus" title="Mode focus — plein écran, sans chiffres">
+          <ExpandIcon />
+        </GhostButton>
       </div>
 
       <div className="grid w-full grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">

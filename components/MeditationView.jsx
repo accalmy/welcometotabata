@@ -2,11 +2,12 @@
 
 import { useCallback, useEffect, useMemo } from 'react';
 import Dial from './Dial';
-import { GhostButton, ProgressBar, ResetIcon, Slider, TransportButton } from './ui';
+import FocusOverlay from './FocusOverlay';
+import { ExpandIcon, GhostButton, ProgressBar, ResetIcon, Slider, TransportButton } from './ui';
 import { AMBIENCES, findAmbience } from '@/lib/ambience';
 import { buildMeditationSchedule, formatTime } from '@/lib/presets';
 import { getEngine } from '@/lib/audio';
-import { useHotkeys, useRunner, useWakeLock } from '@/lib/useRunner';
+import { useFocusMode, useHotkeys, useRunner, useWakeLock } from '@/lib/useRunner';
 
 const DURATIONS = [3, 5, 10, 15, 20, 30, 45, 60];
 const BELLS = [
@@ -36,7 +37,8 @@ export default function MeditationView({ minutes, onMinutesChange, ambienceId, o
   const { status, elapsed, start, pause, resume, reset } = useRunner(schedule, { onFinish: fadeOut });
   const running = status === 'running';
   const done = status === 'done';
-  useWakeLock(running);
+  const { focus, enter: enterFocus, exit: exitFocus } = useFocusMode();
+  useWakeLock(running || focus);
 
   const [accentA, accentB] = AMBIENCE_ACCENTS[ambience.id] || AMBIENCE_ACCENTS.none;
   useEffect(() => {
@@ -83,6 +85,14 @@ export default function MeditationView({ minutes, onMinutesChange, ambienceId, o
 
   return (
     <div className="flex flex-col items-center gap-8">
+      <FocusOverlay
+        open={focus}
+        progress={elapsed / schedule.total}
+        running={running}
+        onToggle={onTransport}
+        onExit={exitFocus}
+      />
+
       <div className={running ? 'breathe' : undefined}>
         <Dial
           progress={elapsed / schedule.total}
@@ -107,7 +117,9 @@ export default function MeditationView({ minutes, onMinutesChange, ambienceId, o
           <ResetIcon />
         </GhostButton>
         <TransportButton running={running} onClick={onTransport} />
-        <div className="h-12 w-12" aria-hidden />
+        <GhostButton onClick={enterFocus} ariaLabel="Mode focus" title="Mode focus — plein écran, sans chiffres">
+          <ExpandIcon />
+        </GhostButton>
       </div>
 
       <div className="w-full space-y-5">

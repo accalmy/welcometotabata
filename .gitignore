@@ -9,4 +9,4 @@ build
 .DS_Store
 
 # Source recordings for scripts/prepare-gongs.sh (the trimmed strikes live in public/gongs)
-gongs/
+/gongs/

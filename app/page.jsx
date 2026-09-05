@@ -5,7 +5,7 @@ import MeditationView from '@/components/MeditationView';
 import WorkoutView from '@/components/WorkoutView';
 import { GhostButton, Slider, SoundIcon, Toggle } from '@/components/ui';
 import { getEngine } from '@/lib/audio';
-import { GONGS } from '@/lib/gongs';
+import { DEFAULT_GONGS, GONGS, GONG_ROLES } from '@/lib/gongs';
 import { useLocalState } from '@/lib/useLocalState';
 
 const TABS = [
@@ -36,7 +36,7 @@ export default function Home() {
   const [minutes, setMinutes] = useLocalState('medMinutes', 10);
   const [ambienceId, setAmbienceId] = useLocalState('ambience', 'forest');
   const [bellEvery, setBellEvery] = useLocalState('bell', 0);
-  const [gongId, setGongId] = useLocalState('gong', 'gong-1');
+  const [gongs, setGongs] = useLocalState('gongs', DEFAULT_GONGS);
   const [settingsOpen, setSettingsOpen] = useState(false);
 
   // Mirror the preferences into the audio engine.
@@ -54,8 +54,19 @@ export default function Home() {
   }, [ambienceVolume]);
   useEffect(() => {
     const engine = getEngine();
-    if (engine) engine.setGong(gongId);
-  }, [gongId]);
+    if (engine) Object.entries(gongs).forEach(([role, id]) => engine.setGong(role, id));
+  }, [gongs]);
+
+  // Preview a role with the room a real interval would give it, so a long gong
+  // on a short rest is auditioned exactly as it will be heard.
+  const PREVIEW_ROOM = { work: 20, rest: 10 };
+  const applyGongs = (next, previewRole) => {
+    setGongs(next);
+    const engine = getEngine();
+    if (!engine) return;
+    Object.entries(next).forEach(([role, id]) => engine.setGong(role, id));
+    if (previewRole) engine.preview(previewRole, PREVIEW_ROOM[previewRole]).catch(() => {});
+  };
 
   useEffect(() => {
     const onKey = (e) => {
@@ -121,37 +132,40 @@ export default function Home() {
             onChange={(v) => setCueVolume(v / 100)}
             display={`${Math.round(cueVolume * 100)} %`}
           />
-          <div className="px-1 pb-1 pt-3">
-            <p className="text-sm font-medium">Gong</p>
-            <div className="mt-2 flex flex-wrap gap-2">
-              {GONGS.map((g) => (
-                <button
-                  key={g.id}
-                  type="button"
-                  onClick={() => {
-                    setGongId(g.id);
-                    const engine = getEngine();
-                    if (engine) {
-                      engine.setGong(g.id);
-                      engine.preview('work').catch(() => {});
-                    }
-                  }}
-                  aria-pressed={g.id === gongId}
-                  title={g.hint}
-                  className={`rounded-full px-3.5 py-1.5 text-sm transition ${
-                    g.id === gongId ? 'accent-fill text-ink font-semibold' : 'bg-white/6 text-chalk/75 hover:bg-white/12'
-                  }`}
-                >
-                  {g.name}
-                </button>
-              ))}
+          {GONG_ROLES.map(({ role, label, hint }) => (
+            <div key={role} className="px-1 pb-1 pt-3">
+              <p className="text-sm font-medium">{label}</p>
+              <p className="text-xs text-mist">{hint}</p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {GONGS.map((g) => (
+                  <button
+                    key={g.id}
+                    type="button"
+                    onClick={() => applyGongs({ ...gongs, [role]: g.id }, role)}
+                    aria-pressed={g.id === gongs[role]}
+                    title={g.hint}
+                    className={`rounded-full px-3.5 py-1.5 text-sm transition ${
+                      g.id === gongs[role]
+                        ? 'accent-fill text-ink font-semibold'
+                        : 'bg-white/6 text-chalk/75 hover:bg-white/12'
+                    }`}
+                  >
+                    {g.name}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
+          ))}
 
           <div className="flex flex-wrap gap-2 px-1 pb-1 pt-3">
+            <button
+              type="button"
+              onClick={() => applyGongs({ work: gongs.rest, rest: gongs.work }, 'work')}
+              className="rounded-full bg-white/6 px-3 py-1.5 text-xs text-chalk/75 transition hover:bg-white/12"
+            >
+              ⇄ Inverser les deux
+            </button>
             {[
-              ['work', 'Gong effort'],
-              ['rest', 'Cliquetis repos'],
               ['minute', 'Gong minute'],
               ['end', 'Gong final'],
             ].map(([type, label]) => (

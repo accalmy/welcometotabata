@@ -31,14 +31,20 @@ ou la croix en sortent.
 
 ## Le son
 
-Trois voix de gong au choix dans les réglages : **Gong 1** (frappe courte de
-5 s), **Gong 2** (résonance de 9 s) et **Synthétique**, une cloche générée à la
-volée sur les partiels inharmoniques de Risset — aucun fichier à charger.
+L'effort et le repos ont chacun leur voix, réglable séparément : on distingue
+les deux phases au timbre, sans rien avoir à compter. Par défaut, **Gong 1**
+(frappe courte de 5 s) ouvre l'effort et **Gong 2** (résonance de 9 s) ouvre le
+repos — un bouton inverse les deux, et **Synthétique** reste disponible sur
+chaque rôle : une cloche générée à la volée sur les partiels inharmoniques de
+Risset, sans aucun fichier à charger.
 
-Le cliquetis de repos reste synthétisé quelle que soit la voix choisie : un gong
-échantillonné résonnerait encore à l'ouverture de l'intervalle suivant. Le gong
-final rejoue la même frappe transposée vers le grave, pour qu'on ne le confonde
-pas avec un gong de minute.
+Aucun gong ne déborde sur l'intervalle suivant. Chaque signal connaît la place
+qui lui reste avant le prochain, et se fond au silence pile sur la frontière si
+sa résonance est plus longue : Gong 2 (9,6 s) tient tout juste dans un repos de
+10 s, et serait coupé net sur un repos plus court.
+
+Le gong final rejoue la frappe d'effort transposée vers le grave, pour qu'on ne
+le confonde pas avec un gong de minute.
 
 Tous les repères audio d'une série sont programmés d'avance sur l'horloge de
 l'`AudioContext`, et c'est cette même horloge qui pilote l'affichage : le son et

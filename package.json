@@ -1,0 +1,22 @@
+{
+  "name": "welcometotabata",
+  "version": "1.0.0",
+  "description": "Tabata & meditation timer",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "next": "^16.3.4",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.3.3",
+    "tailwindcss": "^4.3.3"
+  },
+  "private": true
+}

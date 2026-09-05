@@ -40,7 +40,7 @@ export default function WorkoutView({ presetId, onPresetChange, countdown }) {
   const heroLabel = done ? 'Terminé' : status === 'idle' ? preset.name : current.label;
   const heroSub =
     preset.kind === 'interval' && !done
-      ? `Round ${current.kind === 'work' ? current.round : current.round} / ${totalRounds}`
+      ? `Round ${current.round} / ${totalRounds}`
       : preset.kind === 'gongs' && !done
         ? `${current.label} / ${schedule.segments.length}`
         : null;
@@ -95,7 +95,7 @@ export default function WorkoutView({ presetId, onPresetChange, countdown }) {
               type="button"
               onClick={() => onPresetChange(p.id)}
               aria-pressed={active}
-              className={`panel group rounded-2xl px-4 py-3.5 text-left transition ${
+              className={`panel rounded-2xl px-4 py-3.5 text-left transition ${
                 active ? 'accent-glow border-white/20 bg-white/8' : 'hover:bg-white/6'
               }`}
             >

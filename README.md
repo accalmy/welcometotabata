@@ -22,6 +22,11 @@ aucun compte, tout tourne dans le navigateur.
 Plus un mode **Méditation** : durée libre de 1 à 90 minutes, cloches
 intermédiaires optionnelles (toutes les 5 ou 10 minutes) et six ambiances.
 
+Un **départ différé** de 3 secondes précède la séance (réglable : aucun, 3, 5
+ou 10 s), avec trois tics avant le premier gong. Il vit à des temps négatifs :
+la séance elle-même n'est pas décalée d'une seconde, et la barre de progression
+ne démarre qu'au premier gong.
+
 ## Mode focus
 
 Le bouton plein écran ne laisse que l'anneau : ni chiffres, ni libellés, ni
@@ -59,7 +64,15 @@ maître : le minuteur, la barre et l'anneau continuent normalement.
 [public/gongs/](public/gongs/) contient une seule frappe par voix, découpée dans
 les enregistrements d'origine par [scripts/prepare-gongs.sh](scripts/prepare-gongs.sh) :
 extraction d'une répétition, suppression du silence de tête pour que l'attaque
-tombe à t = 0, alignement des niveaux à −18 LUFS, fondu de queue, MP3 96 kbps.
+tombe à t = 0, alignement des niveaux à −18 LUFS, correction à l'oreille, fondu
+de queue, MP3 96 kbps.
+
+Cette correction est le dernier mot, pas les mesures. Après normalisation, gong
+1 mesurait déjà 1,4 LUFS de plus que gong 2 et crêtait 2 dB plus haut, et
+passait pourtant pour le signal faible à l'usage : gong 2 résonne neuf secondes
+et remplit tout un temps de repos, donc il s'impose davantage quoi qu'en dise le
+mètre. Gong 1 est relevé de 5 dB dans le script — un seul nombre à retoucher si
+l'équilibre ne convient pas.
 
 Les enregistrements sources vivent dans `gongs/`, hors dépôt (voir
 `.gitignore`) — seules les frappes découpées sont publiées. Pour changer de

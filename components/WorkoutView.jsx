@@ -14,18 +14,21 @@ const ACCENTS = {
   idle: ['#a78bfa', '#6366f1'],
 };
 
-export default function WorkoutView({ presetId, onPresetChange, countdown }) {
+export default function WorkoutView({ presetId, onPresetChange, countdown, lead }) {
   const preset = PRESETS.find((p) => p.id === presetId) || PRESETS[0];
-  const schedule = useMemo(() => buildSchedule(preset, { countdown }), [preset, countdown]);
-  const { status, elapsed, start, pause, resume, reset } = useRunner(schedule);
+  const schedule = useMemo(() => buildSchedule(preset, { countdown, lead }), [preset, countdown, lead]);
+  const { status, elapsed, counting, start, pause, resume, reset } = useRunner(schedule);
 
   const running = status === 'running';
   const done = status === 'done';
   const { focus, enter: enterFocus, exit: exitFocus } = useFocusMode();
   useWakeLock(running || focus);
 
-  const current = segmentAt(schedule.segments, elapsed);
-  const phase = done ? 'idle' : status === 'idle' ? 'idle' : current.kind;
+  // Everything the run itself sees is clamped at 0: the get-ready stretch is
+  // counted down separately and must not bleed into progress or segments.
+  const runElapsed = Math.max(0, elapsed);
+  const current = segmentAt(schedule.segments, runElapsed);
+  const phase = done || counting || status === 'idle' ? 'idle' : current.kind;
   const [accentA, accentB] = ACCENTS[phase] || ACCENTS.idle;
 
   useEffect(() => {
@@ -34,14 +37,19 @@ export default function WorkoutView({ presetId, onPresetChange, countdown }) {
     root.style.setProperty('--accent-b', accentB);
   }, [accentA, accentB]);
 
-  const intoSegment = Math.min(current.duration, Math.max(0, elapsed - current.start));
+  const intoSegment = Math.min(current.duration, Math.max(0, runElapsed - current.start));
   const segmentRemaining = current.duration - intoSegment;
   const totalRounds = schedule.segments.filter((s) => s.kind === 'work').length;
 
-  const heroTime = done ? formatTime(0) : formatTime(status === 'idle' ? current.duration : segmentRemaining);
-  const heroLabel = done ? 'Terminé' : status === 'idle' ? preset.name : current.label;
-  const heroSub =
-    preset.kind === 'interval' && !done
+  const heroTime = counting
+    ? String(Math.max(1, Math.ceil(-elapsed - 0.0001)))
+    : done
+      ? formatTime(0)
+      : formatTime(status === 'idle' ? current.duration : segmentRemaining);
+  const heroLabel = counting ? 'Prêt' : done ? 'Terminé' : status === 'idle' ? preset.name : current.label;
+  const heroSub = counting
+    ? preset.name
+    : preset.kind === 'interval' && !done
       ? `Round ${current.round} / ${totalRounds}`
       : preset.kind === 'gongs' && !done
         ? `${current.label} / ${schedule.segments.length}`
@@ -55,14 +63,20 @@ export default function WorkoutView({ presetId, onPresetChange, countdown }) {
 
   useHotkeys({ onToggle: onTransport, onReset: reset });
 
-  const segmentProgress = status === 'idle' ? 0 : intoSegment / current.duration;
+  // During the lead-in the ring fills up to the start instead of tracking a segment.
+  const segmentProgress = counting
+    ? (schedule.lead + elapsed) / schedule.lead
+    : status === 'idle'
+      ? 0
+      : intoSegment / current.duration;
+  const sessionProgress = runElapsed / schedule.total;
 
   return (
     <div className="flex flex-col items-center gap-8">
       <FocusOverlay
         open={focus}
         progress={segmentProgress}
-        sessionProgress={elapsed / schedule.total}
+        sessionProgress={sessionProgress}
         running={running}
         onToggle={onTransport}
         onExit={exitFocus}
@@ -70,7 +84,7 @@ export default function WorkoutView({ presetId, onPresetChange, countdown }) {
 
       <Dial
         progress={segmentProgress}
-        sessionProgress={elapsed / schedule.total}
+        sessionProgress={sessionProgress}
         time={heroTime}
         label={heroLabel}
         sub={heroSub}
@@ -78,15 +92,15 @@ export default function WorkoutView({ presetId, onPresetChange, countdown }) {
       />
 
       <div className="w-full max-w-md space-y-3">
-        <ProgressBar value={elapsed / schedule.total} />
+        <ProgressBar value={sessionProgress} />
         <SegmentStrip
           segments={schedule.segments}
           total={schedule.total}
-          activeIndex={status === 'idle' ? -1 : done ? schedule.segments.length : current.index}
+          activeIndex={status === 'idle' || counting ? -1 : done ? schedule.segments.length : current.index}
         />
         <div className="flex justify-between text-xs text-mist tnum">
-          <span>{formatTime(elapsed)} écoulé</span>
-          <span>{formatTime(schedule.total - elapsed)} restant</span>
+          <span>{formatTime(runElapsed)} écoulé</span>
+          <span>{formatTime(schedule.total - runElapsed)} restant</span>
         </div>
       </div>
 

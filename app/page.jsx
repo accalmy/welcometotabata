@@ -36,6 +36,7 @@ export default function Home() {
   const [minutes, setMinutes] = useLocalState('medMinutes', 10);
   const [ambienceId, setAmbienceId] = useLocalState('ambience', 'forest');
   const [bellEvery, setBellEvery] = useLocalState('bell', 0);
+  const [lead, setLead] = useLocalState('lead', 3);
   const [gongs, setGongs] = useLocalState('gongs', DEFAULT_GONGS);
   const [settingsOpen, setSettingsOpen] = useState(false);
 
@@ -124,6 +125,25 @@ export default function Home() {
             label="Décompte 3-2-1"
             hint="Trois tics avant chaque changement de phase"
           />
+          <div className="px-1 pb-1 pt-3">
+            <p className="text-sm font-medium">Départ différé</p>
+            <p className="text-xs text-mist">Le temps de se mettre en place avant le premier gong</p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {[0, 3, 5, 10].map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  onClick={() => setLead(s)}
+                  aria-pressed={s === lead}
+                  className={`tnum rounded-full px-3.5 py-1.5 text-sm transition ${
+                    s === lead ? 'accent-fill text-ink font-semibold' : 'bg-white/6 text-chalk/75 hover:bg-white/12'
+                  }`}
+                >
+                  {s === 0 ? 'Aucun' : `${s} s`}
+                </button>
+              ))}
+            </div>
+          </div>
           <Slider
             label="Volume des signaux"
             value={Math.round(cueVolume * 100)}
@@ -200,7 +220,7 @@ export default function Home() {
 
       <div className="mt-10 flex-1">
         {tab === 'workout' ? (
-          <WorkoutView presetId={presetId} onPresetChange={setPresetId} countdown={countdown} />
+          <WorkoutView presetId={presetId} onPresetChange={setPresetId} countdown={countdown} lead={lead} />
         ) : (
           <MeditationView
             minutes={minutes}
